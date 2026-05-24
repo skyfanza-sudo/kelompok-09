@@ -8,7 +8,7 @@ import Webcam from 'react-webcam';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Camera, Trash2, Leaf, Zap, Award, Info, RefreshCw, X, 
-  CheckCircle2, ChevronRight, BarChart3, MessageSquare, Send, Sparkles, Trophy, Check, Upload, Users, Gift
+  CheckCircle2, ChevronRight, BarChart3, MessageSquare, Send, Sparkles, Trophy, Check, Upload, Users, Gift, SwitchCamera
 } from 'lucide-react';
 import { cn } from './lib/utils';
 import mascotUrl from './assets/images/vibebot_mascot_1779031187636.png';
@@ -50,10 +50,10 @@ const DAILY_QUESTS: Quest[] = [
 ];
 
 const COMMUNITY_LEADERBOARD = [
-  { rank: 1, name: "Bu RW Sumiati (RW 05)", points: 840, avatar: "👵" },
-  { rank: 2, name: "Reza Pejuang Kompos", points: 720, avatar: "👦" },
-  { rank: 3, name: "Pak RT Bambang (RT 02)", points: 610, avatar: "👨" },
-  { rank: 4, name: "Siti Upcycle Queen", points: 490, avatar: "👧" },
+  { rank: 1, name: "NENG NAZLA NABILA", points: 840, avatar: "👩" },
+  { rank: 2, name: "IRFAN MARDIANSYAH", points: 720, avatar: "👦" },
+  { rank: 3, name: "ARYA FATTA", points: 610, avatar: "👱" },
+  { rank: 4, name: "RIFALDI HIDAYAT", points: 490, avatar: "🧑" },
 ];
 
 interface Reward {
@@ -71,6 +71,29 @@ const REDEEMABLE_REWARDS: Reward[] = [
   { id: 'compost_bag', title: '1 Karung Kompos Organik', cost: 80, icon: '🍂', description: 'Satu karung kecil pupuk kompos premium buatan komunitas warga.' }
 ];
 
+const GRADIENTS = {
+  emerald: {
+    classes: 'from-emerald-400 via-teal-500 to-emerald-600',
+    title: '🌴 Tropic Green',
+    text: 'text-emerald-500',
+  },
+  sunset: {
+    classes: 'from-amber-400 via-orange-500 to-rose-500',
+    title: '🌅 Eco Sunset',
+    text: 'text-orange-500',
+  },
+  aurora: {
+    classes: 'from-blue-500 via-cyan-500 to-emerald-400',
+    title: '🌌 Cosmic Aurora',
+    text: 'text-cyan-500',
+  },
+  violet: {
+    classes: 'from-purple-600 via-fuchsia-500 to-indigo-600',
+    title: '💅 Astro Cyber',
+    text: 'text-purple-500',
+  }
+};
+
 export default function App() {
   const [imgSrc, setImgSrc] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -81,6 +104,11 @@ export default function App() {
   const [redeemedRewards, setRedeemedRewards] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const webcamRef = useRef<Webcam>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+
+  const toggleFacingMode = () => {
+    setFacingMode(prev => (prev === 'environment' ? 'user' : 'environment'));
+  };
 
   // Chat Mode States
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
@@ -90,6 +118,18 @@ export default function App() {
 
   // Gamified Quests States
   const [completedQuests, setCompletedQuests] = useState<string[]>([]);
+
+  // AI Eco-Calculator & Instagram Story Customization States
+  const [streakDays, setStreakDays] = useState<number>(() => {
+    const saved = localStorage.getItem('vibe_scan_streak');
+    return saved ? parseInt(saved, 10) : 5;
+  });
+  const [selectedGradient, setSelectedGradient] = useState<'emerald' | 'sunset' | 'aurora' | 'violet'>('emerald');
+  const [showConfetti, setShowConfetti] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('vibe_scan_streak', streakDays.toString());
+  }, [streakDays]);
 
   // Load points, quests, and rewards from local storage
   useEffect(() => {
@@ -161,6 +201,11 @@ export default function App() {
         body: JSON.stringify({ image }),
       });
       const data = await response.json();
+      
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'Gagal menganalisis foto');
+      }
+      
       setResult(data);
       const newTotal = totalPoints + (data.vibe_points || 0);
       setTotalPoints(newTotal);
@@ -170,8 +215,10 @@ export default function App() {
       setChatMessages([
         { sender: 'bot' as const, text: `Halo sob! Aku siap bantu kamu buat upcycle atau olah ${data.object_name} ini. Ada yang mau ditanyain?` }
       ]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Analysis failed:', error);
+      setToastMessage(`❌ Waduh: ${error.message || 'Mungkin server sibuk, silakan coba foto lagi ya!'}`);
+      setImgSrc(null); // Reset preview so webcam stays active
     } finally {
       setAnalyzing(false);
     }
@@ -254,14 +301,20 @@ export default function App() {
           </div>
         </div>
         
-        <button 
-          onClick={() => setShowDashboard(!showDashboard)}
-          className="flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition-all hover:bg-emerald-100 active:scale-95"
-          id="summary-button"
-        >
-          <Award size={18} className="text-emerald-500" />
-          <span>{totalPoints} VP</span>
-        </button>
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <span className="text-[9px] sm:text-[10px] font-black uppercase text-emerald-600 tracking-wider bg-emerald-50 border border-emerald-200/50 px-2 py-1 rounded-lg animate-pulse">
+            LIAT VIEW POINT KAMUU 👉
+          </span>
+          <button 
+            onClick={() => setShowDashboard(!showDashboard)}
+            className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-emerald-50 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-emerald-700 transition-all hover:bg-emerald-100 active:scale-95 shadow-sm border border-emerald-100 shrink-0"
+            id="summary-button"
+            title="Liat View Point Kamuu"
+          >
+            <Award size={16} className="text-emerald-500" />
+            <span>{totalPoints} VP</span>
+          </button>
+        </div>
       </header>
 
       <main className="mx-auto max-w-md px-6 py-8">
@@ -605,8 +658,8 @@ export default function App() {
                   audio={false}
                   ref={webcamRef}
                   screenshotFormat="image/jpeg"
-                  videoConstraints={{ facingMode: 'environment' }}
-                  className="h-full w-full object-cover"
+                  videoConstraints={{ facingMode }}
+                  className={cn("h-full w-full object-cover", facingMode === 'user' && "scale-x-[-1]")}
                 />
                 
                 {/* Advanced Tech Scanline Line Sweep Overlay */}
@@ -654,10 +707,15 @@ export default function App() {
                       <Camera className="absolute text-emerald-600" size={28} />
                     </button>
 
-                    {/* balanced decoration icon or helper info */}
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-emerald-400 backdrop-blur-md shadow-lg border border-white/10">
-                      <Sparkles size={18} className="animate-pulse" />
-                    </div>
+                    {/* Camera Switch (Front/Back) Selector Button */}
+                    <button
+                      type="button"
+                      onClick={toggleFacingMode}
+                      className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-emerald-400 hover:text-emerald-300 hover:scale-105 active:scale-95 backdrop-blur-md shadow-lg border border-white/10 transition-all cursor-pointer"
+                      title="Ganti Kamera Depan/Belakang"
+                    >
+                      <SwitchCamera size={18} />
+                    </button>
                   </div>
                   
                   <p className="text-[10px] bg-black/65 text-stone-200 px-3.5 py-1.5 rounded-full font-bold tracking-wider backdrop-blur-sm shadow-md uppercase">
@@ -745,6 +803,8 @@ export default function App() {
                         </div>
                       </div>
                     </div>
+
+
 
                     {/* Segmented Controller Tab Bar */}
                     <div className="grid grid-cols-3 bg-stone-100 p-1 rounded-2xl border border-stone-200/40 font-black text-[11px]">

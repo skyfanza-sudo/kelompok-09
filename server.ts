@@ -51,7 +51,7 @@ The JSON should contain:
 Return ONLY the JSON object.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.5-flash",
       contents: {
         parts: [
           { inlineData: { data: base64Data, mimeType } },
@@ -78,7 +78,11 @@ Return ONLY the JSON object.`;
       }
     });
 
-    const result = JSON.parse(response.text || "{}");
+    let cleanText = response.text || "{}";
+    if (cleanText.includes("```")) {
+      cleanText = cleanText.replace(/```json/g, "").replace(/```/g, "").trim();
+    }
+    const result = JSON.parse(cleanText);
     res.json(result);
   } catch (error) {
     console.error("Gemini Error:", error);
@@ -120,7 +124,7 @@ Provide your answer based on this sassy/enthusiastic persona. Keep it to 2-3 sho
     });
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.5-flash",
       contents: chatHistory,
       config: {
         systemInstruction,
