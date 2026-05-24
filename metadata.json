@@ -1,0 +1,6 @@
+{
+  "name": "PilahVibe AI",
+  "description": "Hyper-local recycling assistant using Gemini AI to identify and categorize household waste with local wisdom.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
